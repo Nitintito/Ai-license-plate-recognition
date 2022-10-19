@@ -1,0 +1,8 @@
+﻿  CMLPR.cpp
+C:\Users\jason\source\repos\CMLPR\CMLPR\CMLPR.cpp(77,15): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+  Generating code
+  95 of 139 functions (68.3%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  CMLPR.vcxproj -> C:\Users\jason\source\repos\CMLPR\x64\Release\CMLPR.exe
