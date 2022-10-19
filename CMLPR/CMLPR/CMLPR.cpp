@@ -6,6 +6,7 @@
 #include "highgui/highgui.hpp"
 #include "opencv2/opencv.hpp"
 
+
 using namespace cv;
 using namespace std;
 
@@ -162,8 +163,6 @@ Mat Edge(Mat Grey, int th)
 			int AvgR = (Grey.at<uchar>(i - 1, j + 1) + Grey.at<uchar>(i, j + 1) + Grey.at<uchar>(i + 1, j + 1)) / 3;
 			if (abs(AvgL - AvgR) > th)
 				EdgeImg.at<uchar>(i, j) = 255;
-
-
 		}
 	}
 	return EdgeImg;
@@ -190,9 +189,6 @@ Mat Dilation(Mat EdgeImg, int neighbirSize)
 					}
 					else
 						DilatedImg.at<uchar>(i, j) = 255;
-
-
-
 				}
 			}
 			//AvgImg.at<uchar>(i, j) = (Grey.at<uchar>(i-1, j-1) + Grey.at<uchar>(i - 1, j ) + Grey.at<uchar>(i - 1, j + 1)+ Grey.at<uchar>(i , j - 1) + Grey.at<uchar>(i , j ) + Grey.at<uchar>(i, j + 1) + Grey.at<uchar>(i+1, j - 1) + Grey.at<uchar>(i+1, j) + Grey.at<uchar>(i+1, j + 1))/9;
@@ -202,18 +198,21 @@ Mat Dilation(Mat EdgeImg, int neighbirSize)
 	return DilatedImg;
 }
 
-Mat Erosion(Mat Edge, int windowsize) {
+Mat Erosion(Mat Edge, int windowsize) 
+{
 	Mat ErodedImg = Mat::zeros(Edge.size(), CV_8UC1);
-	for (int i = windowsize; i < Edge.rows - windowsize; i++) {
-		for (int j = windowsize; j < Edge.cols - windowsize; j++) {
+	for (int i = windowsize; i < Edge.rows - windowsize; i++) 
+	{
+		for (int j = windowsize; j < Edge.cols - windowsize; j++) 
+		{
 			ErodedImg.at<uchar>(i, j) = Edge.at<uchar>(i, j);
-			for (int p = -windowsize; p <= windowsize; p++) {
-				for (int q = -windowsize; q <= windowsize; q++) {
-					if (Edge.at<uchar>(i + p, j + q) == 0) {
+			for (int p = -windowsize; p <= windowsize; p++) 
+			{
+				for (int q = -windowsize; q <= windowsize; q++) 
+				{
+					if (Edge.at<uchar>(i + p, j + q) == 0) 
+					{
 						ErodedImg.at<uchar>(i, j) = 0;
-
-
-
 					}
 				}
 			}
@@ -225,8 +224,13 @@ Mat Erosion(Mat Edge, int windowsize) {
 
 int main()
 {
+
+	int PlatesFound = 0;
+	for (int i = 0; i < 20; i++)
+	{
+
 		Mat img;
-		img = imread("C:\\Users\\jason\\source\\repos\\CMLPR\\Images\\0.png");
+		img = imread("C:\\Users\\jason\\source\\repos\\Ai-license-plate-recognition\\CMLPR\\Images\\"+to_string(i)+".jpg");
 		//imshow("RBG image" , img);
 
 		Mat GreyImg = RGB2Grey(img);
@@ -268,13 +272,13 @@ int main()
 		{
 			rect = boundingRect(contours1[i]);
 
-			bool ToSmall = rect.width < 60 || rect.height < 20;
-			bool ToBig = rect.width > 200;  
-			bool OutOfBounds = rect.x < 0.1 * GreyImg.cols || rect.x > 0.9 * GreyImg.cols || rect.y < 0.1 * GreyImg.rows || rect.y > 0.9 * GreyImg.rows;
+			bool ToSmall = rect.width < 60 || rect.height < 40;
+			bool ToBig = rect.width > 350 || rect.height > 100;;
+			bool OutsideROI = rect.x < 0.1 * GreyImg.cols || rect.x > 0.9 * GreyImg.cols || rect.y < 0.1 * GreyImg.rows || rect.y > 0.9 * GreyImg.rows;
 
 
 			float ratio = ((float)rect.width / (float)rect.height);
-			if (ToSmall || ToBig || OutOfBounds || ratio < 1.5)
+			if (ToSmall || ToBig || OutsideROI || ratio < 1.5)
 			{
 				drawContours(DilatedImgCpy, contours1, i, black, -1, 8, hierachy1);
 			}
@@ -283,13 +287,29 @@ int main()
 
 		}
 
-		imshow("Filtered Image", DilatedImgCpy);
+		//imshow("Filtered Image", DilatedImgCpy);
 		if (plate.rows != 0 && plate.cols != 0)
-			imshow("Detected Plate", plate);
-	
-		std::cout << img.rows << "x" << img.cols;
+		{
+			imshow("Detected Plate: (" + to_string(i) + ")", plate);
 
+			Mat BlurredImg = Average(GreyImg, 1);
+			//imshow("Blurred image", BlurredImg);
+
+			Mat EdgeImg2 = Edge(plate, 60);
+			//imshow("Edge image", EdgeImg);
+
+			Mat ErosionImg2 = Erosion(EdgeImg2, 1);
+			//imshow("Edge image", EdgeImg);
+
+			Mat DialatedImg2 = Dilation(ErosionImg2, 15);
+			imshow("Dialated image: (" + to_string(i) + ")", DialatedImg2);
+			PlatesFound++;
+		}
 	
+		//cout << img.rows << "x" << img.cols;
+
+	}
+	cout << PlatesFound;
 
     waitKey();
 }
