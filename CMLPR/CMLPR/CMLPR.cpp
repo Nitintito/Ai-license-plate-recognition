@@ -5,7 +5,8 @@
 #include "core/core.hpp"
 #include "highgui/highgui.hpp"
 #include "opencv2/opencv.hpp"
-
+#include <baseapi.h>
+#include <allheaders.h>
 
 using namespace cv;
 using namespace std;
@@ -221,6 +222,34 @@ Mat Erosion(Mat Edge, int windowsize)
 	return ErodedImg;
 }
 
+Mat EqHist(Mat Grey)
+{
+	Mat EQImg = Mat::zeros(Grey.size(), CV_8UC1);
+	// count
+	int count[256] = { 0 };
+	for (int i = 0; i < Grey.rows; i++)
+		for (int j = 0; j < Grey.cols; j++)
+			count[Grey.at<uchar>(i, j)]++;
+	// prob
+	float prob[256] = { 0.0 };
+	for (int i = 0; i < 256; i++)
+		prob[i] = (float)count[i] / (float)(Grey.rows * Grey.cols);
+	// accprob
+	float accprob[256] = { 0.0 };
+	accprob[0] = prob[0];
+	for (int i = 1; i < 256; i++)
+		accprob[i] = prob[i] + accprob[i - 1];
+	// new = 255 * accprob
+	int newvalue[256] = { 0 };
+	for (int i = 0; i < 256; i++)
+		newvalue[i] = 255 * accprob[i];
+
+	for (int i = 0; i < Grey.rows; i++)
+		for (int j = 0; j < Grey.cols; j++)
+			EQImg.at<uchar>(i, j) = newvalue[Grey.at<uchar>(i, j)];
+
+	return EQImg;
+}
 
 int main()
 {
@@ -236,7 +265,9 @@ int main()
 		Mat GreyImg = RGB2Grey(img);
 		//imshow("Grey image", GreyImg);
 
-		Mat BlurredImg = Average(GreyImg, 1);
+		Mat EqIMG = EqHist(GreyImg);
+
+		Mat BlurredImg = Average(EqIMG, 1);
 		//imshow("Blurred image", BlurredImg);
 
 		Mat EdgeImg = Edge(BlurredImg, 50);
