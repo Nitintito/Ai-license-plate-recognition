@@ -2,6 +2,8 @@
 #include "core/core.hpp"
 #include "highgui/highgui.hpp"
 #include "opencv2/opencv.hpp"
+#include <baseapi.h>
+#include <allheaders.h>
 
 using namespace cv;
 using namespace std;
@@ -354,9 +356,10 @@ int main()
 {
 		Mat img;
 		int NumberOfPlates = 0;
-	for (int i = 0; i < 20; i++)
+
+	for (int i = 0; i < 1; i++)
 	{
-		img = imread("C:\\Users\\jason\\source\\repos\\Ai-license-plate-recognition\\CMLPR\\Images\\" + to_string(i) + ".jpg");
+		img = imread("C:\\Users\\jason\\source\\repos\\Ai-license-plate-recognition\\CMLPR\\Images\\" + to_string(0) + ".jpg");
 
 		Mat GreyImg = RGB2Grey(img);
 
@@ -443,6 +446,7 @@ int main()
 		Mat Char;
 		for (int i = 0; i < contours2.size(); i++)
 		{
+
 			rect = boundingRect(contours2[i]);
 			if (rect.height < 5)
 			{
@@ -453,6 +457,19 @@ int main()
 				Char = plate(rect);
 				//imshow("char: (" + to_string(i) + ")", Char);
 			}
+
+			tesseract::TessBaseAPI* api = new tesseract::TessBaseAPI();
+			if (api->Init("C:\\Program Files\\Tesseract-OCR\\tessdata", "eng"))
+			{
+				std::cout << "Could not initialize Tesseract! " << std::endl;
+				exit(1);
+			}
+			api->SetImage(Char.data, Char.cols, Char.rows, Char.channels(), Char.step1());
+
+			char* outText;
+			outText = api->GetUTF8Text();
+
+			std::cout << outText << std::endl;
 		}
 	}
 		cout << NumberOfPlates;
