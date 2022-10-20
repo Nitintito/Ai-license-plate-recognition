@@ -1,12 +1,7 @@
-// CMLPR.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
 #include "core/core.hpp"
 #include "highgui/highgui.hpp"
 #include "opencv2/opencv.hpp"
-#include <baseapi.h>
-#include <allheaders.h>
 
 using namespace cv;
 using namespace std;
@@ -26,20 +21,20 @@ Mat RGB2Grey(Mat RGB)
 	return grey;
 }
 
-
-Mat Grey2Binary(Mat Grey, int treshold)
+Mat Grey2Binary(Mat Grey, int threshold)
 {
 	Mat bin = Mat::zeros(Grey.size(), CV_8UC1);
 
 	for (int i = 0; i < Grey.rows; i++)
 	{
-		for (int j = 0; j < Grey.cols; j+=3)
+		for (int j = 0; j < Grey.cols; j++)
 		{
-			if (Grey.at<uchar>(i, j) > treshold)
+			if (Grey.at<uchar>(i, j) > threshold)
 				bin.at<uchar>(i, j) = 255;
 
 		}
 	}
+
 	return bin;
 }
 
@@ -55,6 +50,7 @@ Mat Inversion(Mat Grey)
 
 		}
 	}
+
 	return invertedImg;
 }
 
@@ -68,12 +64,14 @@ Mat Step(Mat Grey, int th1, int th2)
 		{
 			if (Grey.at<uchar>(i, j) >= th1 && Grey.at<uchar>(i, j) <= th2)
 				output.at<uchar>(i, j) = 255;
+
 		}
 	}
+
 	return output;
 }
 
-Mat Average(Mat Grey, int neighbirSize)
+Mat Avg(Mat Grey, int neighbirSize)
 {
 	Mat AvgImg = Mat::zeros(Grey.size(), CV_8UC1);
 	int totalPix = pow(2 * neighbirSize + 1, 2);
@@ -99,7 +97,6 @@ Mat Average(Mat Grey, int neighbirSize)
 
 	return AvgImg;
 }
-
 
 Mat Max(Mat Grey, int neighbirSize)
 {
@@ -164,9 +161,50 @@ Mat Edge(Mat Grey, int th)
 			int AvgR = (Grey.at<uchar>(i - 1, j + 1) + Grey.at<uchar>(i, j + 1) + Grey.at<uchar>(i + 1, j + 1)) / 3;
 			if (abs(AvgL - AvgR) > th)
 				EdgeImg.at<uchar>(i, j) = 255;
+
+
 		}
 	}
+
 	return EdgeImg;
+
+
+}
+
+Mat DilationOpt(Mat Edge, int windowsize) {
+	Mat dilatedImg = Mat::zeros(Edge.size(), CV_8UC1);
+	for (int i = windowsize; i < Edge.rows - windowsize; i++) {
+		for (int j = windowsize; j < Edge.cols - windowsize; j++) {
+			for (int ii = -windowsize; ii <= windowsize; ii++) {
+				for (int jj = -windowsize; jj <= windowsize; jj++) {
+					if (Edge.at<uchar>(i + ii, j + jj) == 255) {
+						dilatedImg.at<uchar>(i, j) = 255;
+						break;
+					}
+					break;
+				}
+			}
+		}
+	}
+	return dilatedImg;
+}
+
+Mat ErosionOpt(Mat Edge, int windowsize) {
+	Mat ErodedImg = Mat::zeros(Edge.size(), CV_8UC1);
+	for (int i = windowsize; i < Edge.rows - windowsize; i++) {
+		for (int j = windowsize; j < Edge.cols - windowsize; j++) {
+			ErodedImg.at<uchar>(i, j) = Edge.at<uchar>(i, j);
+			for (int p = -windowsize; p <= windowsize; p++) {
+				for (int q = -windowsize; q <= windowsize; q++) {
+					if (Edge.at<uchar>(i + p, j + q) == 0) {
+						ErodedImg.at<uchar>(i, j) = 0;
+
+					}
+				}
+			}
+		}
+	}
+	return ErodedImg;
 }
 
 Mat Dilation(Mat EdgeImg, int neighbirSize)
@@ -190,36 +228,52 @@ Mat Dilation(Mat EdgeImg, int neighbirSize)
 					}
 					else
 						DilatedImg.at<uchar>(i, j) = 255;
+
 				}
 			}
 			//AvgImg.at<uchar>(i, j) = (Grey.at<uchar>(i-1, j-1) + Grey.at<uchar>(i - 1, j ) + Grey.at<uchar>(i - 1, j + 1)+ Grey.at<uchar>(i , j - 1) + Grey.at<uchar>(i , j ) + Grey.at<uchar>(i, j + 1) + Grey.at<uchar>(i+1, j - 1) + Grey.at<uchar>(i+1, j) + Grey.at<uchar>(i+1, j + 1))/9;
+
 		}
 	}
 
 	return DilatedImg;
+
 }
 
-Mat Erosion(Mat Edge, int windowsize) 
+Mat Erosion(Mat EdgeImg, int neighbirSize)
 {
-	Mat ErodedImg = Mat::zeros(Edge.size(), CV_8UC1);
-	for (int i = windowsize; i < Edge.rows - windowsize; i++) 
+	Mat ErodedImg = Mat::zeros(EdgeImg.size(), CV_8UC1);
+	for (int i = neighbirSize; i < EdgeImg.rows - neighbirSize; i++)
 	{
-		for (int j = windowsize; j < Edge.cols - windowsize; j++) 
+		for (int j = neighbirSize; j < EdgeImg.cols - neighbirSize; j++)
 		{
-			ErodedImg.at<uchar>(i, j) = Edge.at<uchar>(i, j);
-			for (int p = -windowsize; p <= windowsize; p++) 
+			ErodedImg.at<uchar>(i, j) = 255;
+			for (int ii = -neighbirSize; ii <= neighbirSize; ii++)
 			{
-				for (int q = -windowsize; q <= windowsize; q++) 
+				for (int jj = -neighbirSize; jj <= neighbirSize; jj++)
 				{
-					if (Edge.at<uchar>(i + p, j + q) == 0) 
+					if (EdgeImg.at<uchar>(i, j) == 255)
 					{
-						ErodedImg.at<uchar>(i, j) = 0;
+						if (EdgeImg.at<uchar>(i + ii, j + jj) == 0)
+						{
+							ErodedImg.at<uchar>(i, j) = 0;
+							break;
+						}
 					}
+					else if (EdgeImg.at<uchar>(i, j) == 0)
+						ErodedImg.at<uchar>(i, j) = 0;
+
+
+
 				}
 			}
+			//AvgImg.at<uchar>(i, j) = (Grey.at<uchar>(i-1, j-1) + Grey.at<uchar>(i - 1, j ) + Grey.at<uchar>(i - 1, j + 1)+ Grey.at<uchar>(i , j - 1) + Grey.at<uchar>(i , j ) + Grey.at<uchar>(i, j + 1) + Grey.at<uchar>(i+1, j - 1) + Grey.at<uchar>(i+1, j) + Grey.at<uchar>(i+1, j + 1))/9;
+
 		}
 	}
+
 	return ErodedImg;
+
 }
 
 Mat EqHist(Mat Grey)
@@ -230,16 +284,19 @@ Mat EqHist(Mat Grey)
 	for (int i = 0; i < Grey.rows; i++)
 		for (int j = 0; j < Grey.cols; j++)
 			count[Grey.at<uchar>(i, j)]++;
+
+
 	// prob
 	float prob[256] = { 0.0 };
 	for (int i = 0; i < 256; i++)
 		prob[i] = (float)count[i] / (float)(Grey.rows * Grey.cols);
+
 	// accprob
 	float accprob[256] = { 0.0 };
 	accprob[0] = prob[0];
 	for (int i = 1; i < 256; i++)
 		accprob[i] = prob[i] + accprob[i - 1];
-	// new = 255 * accprob
+	// new = 255 * accprob 
 	int newvalue[256] = { 0 };
 	for (int i = 0; i < 256; i++)
 		newvalue[i] = 255 * accprob[i];
@@ -251,39 +308,74 @@ Mat EqHist(Mat Grey)
 	return EQImg;
 }
 
+int OTSU(Mat Grey)
+{
+	int count[256] = { 0 };
+	for (int i = 0; i < Grey.rows; i++)
+		for (int j = 0; j < Grey.cols; j++)
+			count[Grey.at<uchar>(i, j)]++;
+
+
+	// prob
+	float prob[256] = { 0.0 };
+	for (int i = 0; i < 256; i++)
+		prob[i] = (float)count[i] / (float)(Grey.rows * Grey.cols);
+
+	// accprob
+	float theta[256] = { 0.0 };
+	theta[0] = prob[0];
+	for (int i = 1; i < 256; i++)
+		theta[i] = prob[i] + theta[i - 1];
+
+	float meu[256] = { 0.0 };
+	for (int i = 1; i < 256; i++)
+		meu[i] = i * prob[i] + meu[i - 1];
+
+	float sigma[256] = { 0.0 };
+	for (int i = 0; i < 256; i++)
+		sigma[i] = pow(meu[255] * theta[i] - meu[i], 2) / (theta[i] * (1 - theta[i]));
+
+	int index = 0;
+	float maxVal = 0;
+	for (int i = 0; i < 256; i++)
+	{
+		if (sigma[i] > maxVal)
+		{
+			maxVal = sigma[i];
+			index = i;
+		}
+	}
+
+	return index + 30;
+
+}
+
 int main()
 {
-
-	int PlatesFound = 0;
+		Mat img;
+		int NumberOfPlates = 0;
 	for (int i = 0; i < 20; i++)
 	{
-
-		Mat img;
-		img = imread("C:\\Users\\jason\\source\\repos\\Ai-license-plate-recognition\\CMLPR\\Images\\"+to_string(i)+".jpg");
-		//imshow("RBG image" , img);
+		img = imread("C:\\Users\\jason\\source\\repos\\Ai-license-plate-recognition\\CMLPR\\Images\\" + to_string(i) + ".jpg");
 
 		Mat GreyImg = RGB2Grey(img);
-		//imshow("Grey image", GreyImg);
 
-		Mat EqIMG = EqHist(GreyImg);
+		Mat EQImg = EqHist(GreyImg);
 
-		Mat BlurredImg = Average(EqIMG, 1);
-		//imshow("Blurred image", BlurredImg);
+		Mat AvgImg = Avg(GreyImg, 1);
 
-		Mat EdgeImg = Edge(BlurredImg, 50);
-		//imshow("Edge image", EdgeImg);
+		Mat EdgeImg = Edge(AvgImg, 60);
 
-		Mat ErosionImg = Erosion(EdgeImg, 1);
-		//imshow("Edge image", EdgeImg);
+		Mat ErodedImg = Erosion(EdgeImg, 1);
+		imshow("Erodedimg", ErodedImg);
 
-		Mat DialatedImg = Dilation(ErosionImg, 15);
-		//imshow("Dialated image", DialatedImg);
+		Mat DilatedImg = Dilation(EdgeImg, 4);
 
 		Mat DilatedImgCpy;
-		DilatedImgCpy = DialatedImg.clone();
+		DilatedImgCpy = DilatedImg.clone();
 		vector<vector<Point>> contours1;
 		vector<Vec4i> hierachy1;
-		findContours(DialatedImg, contours1, hierachy1, RETR_EXTERNAL, CHAIN_APPROX_NONE, Point(0, 0));
+		findContours(DilatedImg, contours1, hierachy1, RETR_EXTERNAL, CHAIN_APPROX_NONE, Point(0, 0));
 		Mat dst = Mat::zeros(GreyImg.size(), CV_8UC3);
 
 		if (!contours1.empty())
@@ -302,13 +394,13 @@ int main()
 		for (int i = 0; i < contours1.size(); i++)
 		{
 			rect = boundingRect(contours1[i]);
+			float ratio = ((float)rect.width / (float)rect.height);
 
-			bool ToSmall = rect.width < 60 || rect.height < 40;
-			bool ToBig = rect.width > 350 || rect.height > 100;;
+			bool ToSmall = rect.width < 60 || rect.height < 20;
+			bool ToBig = rect.width > 350 || rect.height > 100;
 			bool OutsideROI = rect.x < 0.1 * GreyImg.cols || rect.x > 0.9 * GreyImg.cols || rect.y < 0.1 * GreyImg.rows || rect.y > 0.9 * GreyImg.rows;
 
 
-			float ratio = ((float)rect.width / (float)rect.height);
 			if (ToSmall || ToBig || OutsideROI || ratio < 1.5)
 			{
 				drawContours(DilatedImgCpy, contours1, i, black, -1, 8, hierachy1);
@@ -318,29 +410,51 @@ int main()
 
 		}
 
-		//imshow("Filtered Image", DilatedImgCpy);
 		if (plate.rows != 0 && plate.cols != 0)
 		{
-			imshow("Detected Plate: (" + to_string(i) + ")", plate);
-
-			Mat BlurredImg = Average(GreyImg, 1);
-			//imshow("Blurred image", BlurredImg);
-
-			Mat EdgeImg2 = Edge(plate, 60);
-			//imshow("Edge image", EdgeImg);
-
-			Mat ErosionImg2 = Erosion(EdgeImg2, 1);
-			//imshow("Edge image", EdgeImg);
-
-			Mat DialatedImg2 = Dilation(ErosionImg2, 15);
-			imshow("Dialated image: (" + to_string(i) + ")", DialatedImg2);
-			PlatesFound++;
+			//imshow("Detected Plate: (" + to_string(i) + ")", plate);
+			NumberOfPlates++;
 		}
-	
-		//cout << img.rows << "x" << img.cols;
 
+		int OTSUTH = OTSU(plate);
+
+		Mat BinPlate = Grey2Binary(plate, OTSUTH);
+		//if (BinPlate.rows != 0 && BinPlate.cols != 0)
+			//imshow("Binarized Plate: +  (" + to_string(i) + ")", BinPlate);
+
+		Mat DilatedImgCpy2;
+		DilatedImgCpy2 = BinPlate.clone();
+		vector<vector<Point>> contours2;
+		vector<Vec4i> hierachy2;
+		findContours(BinPlate, contours2, hierachy2, RETR_EXTERNAL, CHAIN_APPROX_NONE, Point(0, 0));
+		Mat dst2 = Mat::zeros(plate.size(), CV_8UC3);
+
+		if (!contours2.empty())
+		{
+			for (int i = 0; i < contours2.size(); i++)
+			{
+				Scalar colour((rand() & 255), (rand() & 255), (rand() & 255));
+				drawContours(dst2, contours2, i, colour, -1, 8, hierachy2);
+			}
+		}
+		if (plate.rows != 0 && plate.cols != 0)
+			imshow("Segmented Plate  (" + to_string(i) + ")", dst2);
+
+		Mat Char;
+		for (int i = 0; i < contours2.size(); i++)
+		{
+			rect = boundingRect(contours2[i]);
+			if (rect.height < 5)
+			{
+				drawContours(DilatedImgCpy, contours1, i, black, -1, 8, hierachy1);
+			}
+			else
+			{
+				Char = plate(rect);
+				//imshow("char: (" + to_string(i) + ")", Char);
+			}
+		}
 	}
-	cout << PlatesFound;
-
-    waitKey();
+		cout << NumberOfPlates;
+		waitKey();
 }
