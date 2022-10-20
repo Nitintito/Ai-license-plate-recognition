@@ -352,6 +352,26 @@ int OTSU(Mat Grey)
 
 }
 
+Mat CopyWithBorder(Mat img, int border)
+{
+	Size size(img.cols + (border * 2), img.rows + (border * 2));
+	Mat output = Mat::zeros(size, CV_8UC1);
+
+	for (int i = 0; i < img.rows; i++)
+	{
+		for (int j = 0; j < img.cols; j++)
+		{
+			int value = img.at<uchar>(i, j);
+			if (value != 255)
+				continue;
+
+			output.at<uchar>(i + border, j + border) = value;
+		}
+	}
+
+	return output;
+}
+
 int main()
 {
 		Mat img;
@@ -443,7 +463,6 @@ int main()
 		if (plate.rows != 0 && plate.cols != 0)
 			imshow("Segmented Plate  (" + to_string(i) + ")", dst2);
 
-		Mat Char;
 		for (int i = 0; i < contours2.size(); i++)
 		{
 
@@ -454,22 +473,25 @@ int main()
 			}
 			else
 			{
-				Char = plate(rect);
-				//imshow("char: (" + to_string(i) + ")", Char);
+				Mat Char;
+				Char = BinPlate(rect);
+				Mat CharWithBorder = CopyWithBorder(Char, 5);
+				imshow("char: (" + to_string(i) + ")", CharWithBorder);
+			
+				tesseract::TessBaseAPI* api = new tesseract::TessBaseAPI();
+				if (api->Init("C:\\Program Files\\Tesseract-OCR\\tessdata", "eng"))
+				{
+					std::cout << "Could not initialize Tesseract! " << std::endl;
+					exit(1);
+				}
+				api->SetImage(CharWithBorder.data, CharWithBorder.cols, CharWithBorder.rows, CharWithBorder.channels(), CharWithBorder.step1());
+
+				char* outText;
+				outText = api->GetUTF8Text();
+
+				std::cout << outText << std::endl;
 			}
 
-			tesseract::TessBaseAPI* api = new tesseract::TessBaseAPI();
-			if (api->Init("C:\\Program Files\\Tesseract-OCR\\tessdata", "eng"))
-			{
-				std::cout << "Could not initialize Tesseract! " << std::endl;
-				exit(1);
-			}
-			api->SetImage(Char.data, Char.cols, Char.rows, Char.channels(), Char.step1());
-
-			char* outText;
-			outText = api->GetUTF8Text();
-
-			std::cout << outText << std::endl;
 		}
 	}
 		cout << NumberOfPlates;

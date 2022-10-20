@@ -2,9 +2,9 @@
 C:\Users\jason\source\repos\Ai-license-plate-recognition\CMLPR\CMLPR\CMLPR.cpp(79,15): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
 C:\Users\jason\source\repos\Ai-license-plate-recognition\CMLPR\CMLPR\CMLPR.cpp(304,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 C:\Users\jason\source\repos\Ai-license-plate-recognition\CMLPR\CMLPR\CMLPR.cpp(338,51): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\jason\source\repos\Ai-license-plate-recognition\CMLPR\CMLPR\CMLPR.cpp(467,80): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\jason\source\repos\Ai-license-plate-recognition\CMLPR\CMLPR\CMLPR.cpp(487,131): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
   Generating code
-  1 of 184 functions ( 0.5%) were compiled, the rest were copied from previous compilation.
+  1 of 185 functions ( 0.5%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
     0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
