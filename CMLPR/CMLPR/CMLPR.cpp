@@ -191,7 +191,7 @@ Mat DilationOpt(Mat Edge, int windowsize) {
 	return dilatedImg;
 }
 
-Mat ErosionOpt(Mat Edge, int windowsize) {
+Mat Erosion(Mat Edge, int windowsize) {
 	Mat ErodedImg = Mat::zeros(Edge.size(), CV_8UC1);
 	for (int i = windowsize; i < Edge.rows - windowsize; i++) {
 		for (int j = windowsize; j < Edge.cols - windowsize; j++) {
@@ -239,42 +239,6 @@ Mat Dilation(Mat EdgeImg, int neighbirSize)
 	}
 
 	return DilatedImg;
-
-}
-
-Mat Erosion(Mat EdgeImg, int neighbirSize)
-{
-	Mat ErodedImg = Mat::zeros(EdgeImg.size(), CV_8UC1);
-	for (int i = neighbirSize; i < EdgeImg.rows - neighbirSize; i++)
-	{
-		for (int j = neighbirSize; j < EdgeImg.cols - neighbirSize; j++)
-		{
-			ErodedImg.at<uchar>(i, j) = 255;
-			for (int ii = -neighbirSize; ii <= neighbirSize; ii++)
-			{
-				for (int jj = -neighbirSize; jj <= neighbirSize; jj++)
-				{
-					if (EdgeImg.at<uchar>(i, j) == 255)
-					{
-						if (EdgeImg.at<uchar>(i + ii, j + jj) == 0)
-						{
-							ErodedImg.at<uchar>(i, j) = 0;
-							break;
-						}
-					}
-					else if (EdgeImg.at<uchar>(i, j) == 0)
-						ErodedImg.at<uchar>(i, j) = 0;
-
-
-
-				}
-			}
-			//AvgImg.at<uchar>(i, j) = (Grey.at<uchar>(i-1, j-1) + Grey.at<uchar>(i - 1, j ) + Grey.at<uchar>(i - 1, j + 1)+ Grey.at<uchar>(i , j - 1) + Grey.at<uchar>(i , j ) + Grey.at<uchar>(i, j + 1) + Grey.at<uchar>(i+1, j - 1) + Grey.at<uchar>(i+1, j) + Grey.at<uchar>(i+1, j + 1))/9;
-
-		}
-	}
-
-	return ErodedImg;
 
 }
 
@@ -377,9 +341,9 @@ int main()
 		Mat img;
 		int NumberOfPlates = 0;
 
-	for (int i = 0; i < 1; i++)
+	for (int i = 0; i < 20; i++)
 	{
-		img = imread("C:\\Users\\jason\\source\\repos\\Ai-license-plate-recognition\\CMLPR\\Images\\" + to_string(0) + ".jpg");
+		img = imread("C:\\Users\\jason\\source\\repos\\Ai-license-plate-recognition\\CMLPR\\Images\\" + to_string(i) + ".jpg");
 
 		Mat GreyImg = RGB2Grey(img);
 
@@ -390,7 +354,7 @@ int main()
 		Mat EdgeImg = Edge(AvgImg, 60);
 
 		Mat ErodedImg = Erosion(EdgeImg, 1);
-		imshow("Erodedimg", ErodedImg);
+		//imshow("Erodedimg", ErodedImg);
 
 		Mat DilatedImg = Dilation(EdgeImg, 4);
 
@@ -419,29 +383,34 @@ int main()
 			rect = boundingRect(contours1[i]);
 			float ratio = ((float)rect.width / (float)rect.height);
 
-			bool ToSmall = rect.width < 60 || rect.height < 20;
-			bool ToBig = rect.width > 350 || rect.height > 100;
+			bool ToSmall = rect.width < 50 || rect.height < 20;
+			bool ToBig = rect.width > 350 || rect.height > 80;
 			bool OutsideROI = rect.x < 0.1 * GreyImg.cols || rect.x > 0.9 * GreyImg.cols || rect.y < 0.1 * GreyImg.rows || rect.y > 0.9 * GreyImg.rows;
 
 
 			if (ToSmall || ToBig || OutsideROI || ratio < 1.5)
 			{
-				drawContours(DilatedImgCpy, contours1, i, black, -1, 8, hierachy1);
+					drawContours(DilatedImgCpy, contours1, i, black, -1, 8, hierachy1);
 			}
 			else
 				plate = GreyImg(rect);
-
 		}
 
 		if (plate.rows != 0 && plate.cols != 0)
 		{
 			//imshow("Detected Plate: (" + to_string(i) + ")", plate);
+			resize(plate, plate, cv::Size(plate.size().width * 4, plate.size().height * 4), 0, 0, cv::INTER_LINEAR);
 			NumberOfPlates++;
+		}
+		else
+		{
+			cout << "no plate found";
 		}
 
 		int OTSUTH = OTSU(plate);
 
 		Mat BinPlate = Grey2Binary(plate, OTSUTH);
+
 		//if (BinPlate.rows != 0 && BinPlate.cols != 0)
 			//imshow("Binarized Plate: +  (" + to_string(i) + ")", BinPlate);
 
@@ -465,35 +434,40 @@ int main()
 
 		for (int i = 0; i < contours2.size(); i++)
 		{
-
 			rect = boundingRect(contours2[i]);
-			if (rect.height < 5)
+			if (rect.height < 20)
 			{
 				drawContours(DilatedImgCpy, contours1, i, black, -1, 8, hierachy1);
 			}
 			else
-			{
+			{ 
 				Mat Char;
-				Char = BinPlate(rect);
-				Mat CharWithBorder = CopyWithBorder(Char, 5);
+				Char = plate(rect);
+				resize(Char, Char, cv::Size(Char.size().width * 4, Char.size().height * 4), 0, 0, cv::INTER_LINEAR);
+
+				Char = Step(Char, 200, 255);
+
+				Mat CharWithBorder = CopyWithBorder(Char, 10);
+
 				imshow("char: (" + to_string(i) + ")", CharWithBorder);
 			
 				tesseract::TessBaseAPI* api = new tesseract::TessBaseAPI();
+				api->SetVariable("tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+				api->SetPageSegMode(tesseract::PageSegMode::PSM_SINGLE_CHAR);
 				if (api->Init("C:\\Program Files\\Tesseract-OCR\\tessdata", "eng"))
 				{
-					std::cout << "Could not initialize Tesseract! " << std::endl;
+					cout << "Could not initialize Tesseract! " << endl;
 					exit(1);
 				}
-				api->SetImage(CharWithBorder.data, CharWithBorder.cols, CharWithBorder.rows, CharWithBorder.channels(), CharWithBorder.step1());
+				api->SetImage(Char.data, Char.cols, Char.rows, Char.channels(), Char.step1());
 
 				char* outText;
 				outText = api->GetUTF8Text();
 
-				std::cout << outText << std::endl;
+				cout << outText << endl;
 			}
-
 		}
 	}
-		cout << NumberOfPlates;
+		cout << "number of plates: " << NumberOfPlates;
 		waitKey();
 }
